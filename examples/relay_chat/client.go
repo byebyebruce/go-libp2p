@@ -16,16 +16,26 @@ func RunClient(p peer.AddrInfo) error {
 	if err := h.Connect(context.Background(), p); err != nil {
 		return err
 	}
+	h.SetStreamHandler(protocolChat, func(stream network.Stream) {
+		handleStream(stream)
+	})
 	s, err := h.NewStream(context.Background(), p.ID, protocolShakehand)
 	info := &streamInfo{}
-	err := ReadInfo(s, info)
+	err = ReadInfo(s, info)
 	if err != nil {
 		return err
 	}
-	if info.Host {
-		h.SetStreamHandler(protocolChat, func(stream network.Stream) {
-
-		})
+	s.Close()
+	if !info.Host {
+		id, err := peer.IDFromString(info.ID)
+		if err != nil {
+			return err
+		}
+		s1, err := h.NewStream(context.Background(), id, protocolChat)
+		if err != nil {
+			return err
+		}
+		handleStream(s1)
 	}
-	s.Read()
+	return nil
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 
 	"github.com/libp2p/go-libp2p"
@@ -15,8 +16,40 @@ import (
 	ma "github.com/multiformats/go-multiaddr"
 )
 
+var (
+	port = flag.Int("sp", 31009, "port")
+	dest = flag.String("d", "", "")
+)
+
 func main() {
-	run()
+	flag.Parse()
+	if len(*dest) > 0 {
+		ipfsaddr, err := ma.NewMultiaddr(*dest)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		/*
+			pid, err := ipfsaddr.ValueForProtocol(ma.P_IP4)
+			// Turn the destination into a multiaddr.
+			if err != nil {
+				log.Println(err)
+				return
+			}
+		*/
+
+		// Extract the peer ID from the multiaddr.
+		info, err := peer.AddrInfoFromP2pAddr(ipfsaddr)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		RunClient(*info)
+	} else {
+		RunServer(*port)
+	}
+	select {}
+	//run()
 }
 
 func run() {
